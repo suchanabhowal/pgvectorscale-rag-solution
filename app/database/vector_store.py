@@ -5,19 +5,46 @@ from datetime import datetime
 
 import pandas as pd
 from config.settings import get_settings
-from openai import OpenAI
+#from openai import OpenAI
+from transformers import AutoTokenizer, AutoModel
+import torch
 from timescale_vector import client
 
 
 class VectorStore:
     """A class for managing vector operations and database interactions."""
 
-    def __init__(self):
-        """Initialize the VectorStore with settings, OpenAI client, and Timescale Vector client."""
+    """def __init__(self):
+        #Initialize the VectorStore with settings, OpenAI client, and Timescale Vector client.
         self.settings = get_settings()
         self.openai_client = OpenAI(api_key=self.settings.openai.api_key)
         self.embedding_model = self.settings.openai.embedding_model
         self.vector_settings = self.settings.vector_store
+        self.vec_client = client.Sync(
+            self.settings.database.service_url,
+            self.vector_settings.table_name,
+            self.vector_settings.embedding_dimensions,
+            time_partition_interval=self.vector_settings.time_partition_interval,
+        ) """
+    def __init__(self):
+        """Initialize the VectorStore with Hugging Face settings and Timescale Vector client."""
+        self.settings = get_settings()
+
+        # Initialize Hugging Face model and tokenizer
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            self.settings.huggingface.model_name, 
+            cache_dir=self.settings.huggingface.cache_dir
+        )
+        self.model = AutoModel.from_pretrained(
+            self.settings.huggingface.model_name, 
+            cache_dir=self.settings.huggingface.cache_dir
+        )
+        self.model.eval()  # Set to evaluation mode for inference
+
+        # Vector store settings
+        self.vector_settings = self.settings.vector_store
+
+        # Initialize Timescale Vector client
         self.vec_client = client.Sync(
             self.settings.database.service_url,
             self.vector_settings.table_name,
@@ -37,14 +64,21 @@ class VectorStore:
         """
         text = text.replace("\n", " ")
         start_time = time.time()
-        embedding = (
+        """embedding = (
             self.openai_client.embeddings.create(
                 input=[text],
                 model=self.embedding_model,
             )
             .data[0]
             .embedding
-        )
+        ) """
+        inputs = self.tokenizer(text, return_tensors='pt', truncation=True, padding=True)
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+        
+        # Get the embeddings from the last hidden state and average them
+        embedding = outputs.last_hidden_state.mean(dim=1).squeeze().tolist()
+
         elapsed_time = time.time() - start_time
         logging.info(f"Embedding generated in {elapsed_time:.3f} seconds")
         return embedding
@@ -223,3 +257,5 @@ class VectorStore:
             logging.info(
                 f"Deleted records matching metadata filter from {self.vector_settings.table_name}"
             )
+
+#if __name__ == "__main__":

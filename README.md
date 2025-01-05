@@ -1,9 +1,3 @@
-# Building a High-Performance RAG Solution with Pgvectorscale and Python
-
-This tutorial will guide you through setting up and using `pgvectorscale` with Docker and Python, leveraging OpenAI's powerful `text-embedding-3-small` model for embeddings. You'll learn to build a cutting-edge RAG (Retrieval-Augmented Generation) solution, combining advanced retrieval techniques (including hybrid search) with intelligent answer generation based on the retrieved context. Perfect for AI engineers looking to enhance their projects with state-of-the-art vector search and generation capabilities with the power of PostgreSQL.
-
-## YouTube Tutorial
-You can watch the full tutorial here on [YouTube](https://youtu.be/hAdEuDBN57g).
 
 ## Pgvectorscale Documentation
 
@@ -77,8 +71,10 @@ docker compose up -d
   - Host: localhost
   - Port: 5432
   - User: postgres
-  - Password: password
+  - Password: password(suchana for my database)
   - Database: postgres
+
+OWN - TIMESCALE_SERVICE_URL=postgres://postgres:suchana@localhost:5432/postgres
 
 ### 3. Create a Python script to insert document chunks as vectors
 
